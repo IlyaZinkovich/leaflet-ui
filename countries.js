@@ -12672,7 +12672,7 @@ var countriesData = {
       "type": "Feature",
       "id": "USA",
       "properties": {
-        "name": "United States of America"
+        "name": "United States"
       },
       "geometry": {
         "type": "MultiPolygon",

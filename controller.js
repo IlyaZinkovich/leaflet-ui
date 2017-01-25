@@ -15,30 +15,35 @@ $(".slider")
   });
 
 var map = L.map('map').setView([37.8, -96], 4);
+
 addCountryNames(map);
 
 function addCountryNames(map) {
   L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpandmbXliNDBjZWd2M2x6bDk3c2ZtOTkifQ._QA7i5Mpkd_m30IGElHziw', {
     maxZoom: 18,
-    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
-      '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
-      'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+    attribution: '',
     id: 'mapbox.light'
   }).addTo(map);
 }
 
-var from = [43.11667, 131.90000];
-var to = [55.7522200, 37.6155600];
+var markers = [];
 
-var arcs = []
-
-function addArc(from, to, map) {
-  var arc = L.Polyline.Arc(from, to);
-  arcs.push(arc);
-  arc.addTo(map);
+function addMarker(location, map) {
+  var marker = L.marker(location);
+  markers.push(marker);
+  marker.addTo(map);
 }
 
-addArc(from, to, map);
+var arcs = [];
+
+function addArc(from, to, weight, map) {
+  var arc = L.Polyline.Arc(from, to, {
+    color: '#8E244D',
+    weight: weight
+  });
+  arcs.push(arc);
+  map.addLayer(arc);
+}
 
 function removeArcs(arcs, map) {
   arcs.forEach(function(arc) {
@@ -56,34 +61,42 @@ info.onAdd = function(map) {
 };
 
 info.update = function(props) {
-  this._div.innerHTML = '<h4>US Population Density</h4>' + (props ?
-    '<b>' + props.name + '</b><br />' + props.density + ' people / mi<sup>2</sup>' :
-    'Hover over a state');
+  if (props === undefined) {
+    this._div.innerHTML = '<h4>Hover over a country</h4>';
+  } else if (props.name === chosenCountry) {
+    this._div.innerHTML = '<h4>Destination</h4>';
+  } else {
+    this._div.innerHTML = '<h4>Travellers count</h4>' +
+      '<b>' + props.name + '</b><br />' + props.routes.length + ' people';
+  }
 };
 
 info.addTo(map);
 
-
-// get color depending on population density value
-function getColor(d) {
-  return d > 1000 ? '#800026' :
-    d > 500 ? '#BD0026' :
-    d > 200 ? '#E31A1C' :
-    d > 100 ? '#FC4E2A' :
-    d > 50 ? '#FD8D3C' :
-    d > 20 ? '#FEB24C' :
-    d > 10 ? '#FED976' :
-    '#FFEDA0';
-}
+var chosenCountry = 'France';
 
 function style(feature) {
+  var value = feature.properties.routes.length;
+  var opacity = (value / maxRoutesCount) * 0.8;
+
+  if (feature.properties.name === chosenCountry) {
+    return {
+      weight: 2,
+      opacity: 1,
+      color: 'white',
+      dashArray: '3',
+      fillOpacity: 0.8,
+      fillColor: '#1A9CB0'
+    }
+  }
+
   return {
     weight: 2,
     opacity: 1,
     color: 'white',
     dashArray: '3',
-    fillOpacity: 0.7,
-    fillColor: getColor(feature.properties.density)
+    fillOpacity: value > 0 ? opacity : 0.8,
+    fillColor: value > 0 ? '#8E244D' : '#707070'
   };
 }
 
@@ -123,42 +136,16 @@ function onEachFeature(feature, layer) {
   });
 }
 
-geojson = L.geoJson(countriesData, {
-  style: style,
-  onEachFeature: onEachFeature
-}).addTo(map);
+getData();
 
-map.attributionControl.addAttribution('Population data &copy; <a href="http://census.gov/">US Census Bureau</a>');
-
-
-var legend = L.control({
-  position: 'bottomright'
-});
-
-legend.onAdd = function(map) {
-
-  var div = L.DomUtil.create('div', 'info legend'),
-    grades = [0, 10, 20, 50, 100, 200, 500, 1000],
-    labels = [],
-    from, to;
-
-  for (var i = 0; i < grades.length; i++) {
-    from = grades[i];
-    to = grades[i + 1];
-
-    labels.push(
-      '<i style="background:' + getColor(from + 1) + '"></i> ' +
-      from + (to ? '&ndash;' + to : '+'));
-  }
-
-  div.innerHTML = labels.join('<br>');
-  return div;
-};
-
-legend.addTo(map);
-
+var routes = {};
+var maxRoutesCount = 0;
 
 function getData() {
+  var city = 'Paris';
+  var country = 'France';
+  var startDate = '2016-01-01';
+  var endDate = '2016-01-31';
   $.ajax({
     type: 'GET',
     url: 'http://localhost:8881/routes?city=' + city + '&country=' + country +
@@ -169,35 +156,73 @@ function getData() {
     },
     success: function(results) {
       results.forEach(function(result) {
-        var fromPlaceLocation = {
-          lat: result.fromPlace.latitude,
-          lng: result.fromPlace.longitude
-        };
+        var fromCountry = result.fromPlace.country;
+        if (fromCountry === country) return;
 
-        var toPlaceLocation = {
-          lat: result.toPlace.latitude,
-          lng: result.toPlace.longitude
-        };
-
-        var marker = new google.maps.Marker({
-          position: fromPlaceLocation,
-          map: map
-        });
-
-        var route = [fromPlaceLocation, toPlaceLocation];
-
-        map.setCenter(toPlaceLocation);
-
-        var path = new google.maps.Polyline({
-          path: route,
-          strokeColor: "972BC1",
-          strokeOpacity: 0.75,
-          strokeWeight: 2,
-          geodesic: true
-        });
-
-        path.setMap(map);
+        if (routes[fromCountry] === undefined) {
+          routes[fromCountry] = [];
+        }
+        routes[fromCountry].push(result);
       })
+      countriesData.features.forEach(function(countryData) {
+        var name = countryData.properties.name;
+        if (routes[name] === undefined) {
+          countryData.properties.routes = [];
+        } else {
+          countryData.properties.routes = routes[name];
+          if (routes[name].length > maxRoutesCount) {
+            maxRoutesCount = routes[name].length;
+          }
+        }
+      });
+      for (var countryName in routes) {
+        routes[countryName].forEach(function(route) {
+          var from = [route.fromPlace.latitude, route.fromPlace.longitude];
+          var to = [route.toPlace.latitude, route.toPlace.longitude];
+          if (from[0] == null || from[1] == null || to[0] == null || to[1] == null)
+            return;
+          addMarker(from, map);
+        });
+        // addArc(from, to, (routes[countryName].length / maxRoutesCount) * 3, map);
+      }
+      countriesData.features.forEach(function(countryData) {
+        console.log(countryData.properties.name + ' - ' + countryData.properties.routes.length);
+      });
+      console.log(maxRoutesCount);
+      geojson = L.geoJson(countriesData, {
+        style: style,
+        onEachFeature: onEachFeature
+      }).addTo(map);
+
+
+      var legend = L.control({
+        position: 'bottomright'
+      });
+
+      legend.onAdd = function(map) {
+
+        var div = L.DomUtil.create('div', 'info legend'),
+          labels = [],
+          from, to;
+        var grades = [];
+        for (var i = 0; i < 8; i++) {
+          grades.push(parseInt((maxRoutesCount / 8) * i, 10));
+        }
+
+        for (var i = 0; i < grades.length; i++) {
+          from = grades[i];
+          to = grades[i + 1];
+
+          labels.push(
+            '<i style="background:' + '#8E244D;' + 'opacity:' + (from / maxRoutesCount) * 0.8 + '"></i> ' +
+            from + (to ? '&ndash;' + to : '+'));
+        }
+
+        div.innerHTML = labels.join('<br>');
+        return div;
+      };
+
+      legend.addTo(map);
     }
   });
 }
