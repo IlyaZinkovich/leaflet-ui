@@ -1,15 +1,69 @@
-#map {
-  width: 600px;
-  height: 400px;
+html, body {
+  height: 100%;
+  background-color: #CCCCCC;
+}
+
+#data-form {
+  margin-top: 20px;
+}
+
+span {
+  font-family: Oswald;
+  font-size: 24px;
+  font-style: normal;
+  font-variant: normal;
+  font-weight: bold;
+  line-height: 26.4px;
+}
+
+.leaflet-control-attribution {
+  display: none;
+}
+
+.leaflet-control-zoom, .leaflet-bar a:first-child, .leaflet-bar a:last-child {
+  border-radius: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.flex-container {
+  display: flex;
+  height: 60%;
+  flex-direction: column;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+}
+
+.flex-item.header {
+  flex: 1;
+  text-align: center;
+  color: #FFFFFF;
+  background-color: #464547;
+  padding: 5px;
+}
+
+.flex-item.body {
+  flex: 20;
+}
+
+.flex-item.footer {
+  flex: 1;
+  text-align: center;
+  color: #FFFFFF;
+  background-color: #464547;
+  padding: 10px;
+}
+
+#map, #prediction-map {
+  width: 100%;
+  height: 100%;
 }
 
 .info {
   padding: 6px 8px;
-  font: 14px/16px Arial, Helvetica, sans-serif;
+  font: 14px/16px Oswald, Helvetica, bold;
   background: white;
   background: rgba(255, 255, 255, 0.8);
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-  border-radius: 5px;
 }
 
 .info h4 {
@@ -29,9 +83,4 @@
   float: left;
   margin-right: 8px;
   opacity: 0.7;
-}
-
-.slider {
-  margin: 20px;
-  width: 50%;
 }

@@ -1,55 +1,13 @@
-var months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-$(".slider")
-  .slider({
-    range: true,
-    min: 0,
-    max: months.length - 1,
-    value: new Date().getMonth()
-  })
-  .slider("pips", {
-    rest: "label",
-    labels: months
-  })
-  .on("slidechange", function(e, ui) {
-    console.log(months[ui.values[0]] + "-" + months[ui.values[1]]);
-  });
-
-var map = L.map('map').setView([37.8, -96], 4);
+var map = L.map('map').setView([37.8, -96], 3);
 
 addCountryNames(map);
 
 function addCountryNames(map) {
-  L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpandmbXliNDBjZWd2M2x6bDk3c2ZtOTkifQ._QA7i5Mpkd_m30IGElHziw', {
+  L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoiaWx5YXppbmtvdmljaCIsImEiOiJjaXkwbDVyd3kwMDRyMnpuODkzbnBqdzNrIn0.BDlBOMJc3mcQeQR0XTB9rg', {
     maxZoom: 18,
     attribution: '',
     id: 'mapbox.light'
   }).addTo(map);
-}
-
-var markers = [];
-
-function addMarker(location, map) {
-  var marker = L.marker(location);
-  markers.push(marker);
-  marker.addTo(map);
-}
-
-var arcs = [];
-
-function addArc(from, to, weight, map) {
-  var arc = L.Polyline.Arc(from, to, {
-    color: '#8E244D',
-    weight: weight
-  });
-  arcs.push(arc);
-  map.addLayer(arc);
-}
-
-function removeArcs(arcs, map) {
-  arcs.forEach(function(arc) {
-    map.removeLayer(arc);
-  })
-  arcs = [];
 }
 
 var info = L.control();
@@ -83,8 +41,7 @@ function style(feature) {
     return {
       weight: 2,
       opacity: 1,
-      color: 'white',
-      dashArray: '3',
+      color: '#464547',
       fillOpacity: 0.8,
       fillColor: '#1A9CB0'
     }
@@ -104,10 +61,11 @@ function highlightFeature(e) {
   var layer = e.target;
 
   layer.setStyle({
-    weight: 5,
-    color: '#666',
+    weight: 2,
+    color: '#464547',
     dashArray: '',
-    fillOpacity: 0.7
+    fillOpacity: 0.7,
+    fillColor: '#39C2D7'
   });
 
   if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
@@ -126,6 +84,8 @@ function resetHighlight(e) {
 
 function zoomToFeature(e) {
   map.fitBounds(e.target.getBounds());
+  chosenCountry = e.target.feature.properties.name;
+  getData(chosenCountry);
 }
 
 function onEachFeature(feature, layer) {
@@ -136,35 +96,37 @@ function onEachFeature(feature, layer) {
   });
 }
 
-getData();
+getData(chosenCountry);
 
+var legend = L.control({
+  position: 'bottomright'
+});
 var routes = {};
 var maxRoutesCount = 0;
 
-function getData() {
-  var city = 'Paris';
-  var country = 'France';
-  var startDate = '2016-01-01';
-  var endDate = '2016-01-31';
+function getData(chosenCountry) {
+  routes = {};
+  maxRoutesCount = 0;
+  if (legend !== undefined) map.removeLayer(legend);
   $.ajax({
     type: 'GET',
-    url: 'http://localhost:8881/routes?city=' + city + '&country=' + country +
-      '&startDate=' + startDate + '&endDate=' + endDate,
+    url: 'http://localhost:8882/routes?country=' + chosenCountry,
     dataType: "json",
     xhrFields: {
       withCredentials: false
     },
     success: function(results) {
       results.forEach(function(result) {
-        var fromCountry = result.fromPlace.country;
-        if (fromCountry === country) return;
+        var fromCountry = result.from.country;
+        if (fromCountry === chosenCountry) return;
 
         if (routes[fromCountry] === undefined) {
           routes[fromCountry] = [];
         }
         routes[fromCountry].push(result);
       })
-      countriesData.features.forEach(function(countryData) {
+      var countriesRoutes = JSON.parse(JSON.stringify(countriesData));
+      countriesRoutes.features.forEach(function(countryData) {
         var name = countryData.properties.name;
         if (routes[name] === undefined) {
           countryData.properties.routes = [];
@@ -175,29 +137,12 @@ function getData() {
           }
         }
       });
-      for (var countryName in routes) {
-        routes[countryName].forEach(function(route) {
-          var from = [route.fromPlace.latitude, route.fromPlace.longitude];
-          var to = [route.toPlace.latitude, route.toPlace.longitude];
-          if (from[0] == null || from[1] == null || to[0] == null || to[1] == null)
-            return;
-          addMarker(from, map);
-        });
-        // addArc(from, to, (routes[countryName].length / maxRoutesCount) * 3, map);
-      }
-      countriesData.features.forEach(function(countryData) {
-        console.log(countryData.properties.name + ' - ' + countryData.properties.routes.length);
-      });
-      console.log(maxRoutesCount);
-      geojson = L.geoJson(countriesData, {
+
+      if (geojson !== undefined) map.removeLayer(geojson);
+      geojson = L.geoJson(countriesRoutes, {
         style: style,
         onEachFeature: onEachFeature
       }).addTo(map);
-
-
-      var legend = L.control({
-        position: 'bottomright'
-      });
 
       legend.onAdd = function(map) {
 
