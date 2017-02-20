@@ -35,6 +35,7 @@ function createGeoJson(countriesRoutes, maxRoutesCount, chosenCountry, info) {
   function zoomToFeature(e) {
     map.fitBounds(e.target.getBounds());
     chosenCountry = e.target.feature.properties.name;
+    info.updateDestination(chosenCountry);
     getData(chosenCountry);
   }
 

@@ -1,34 +1,25 @@
 var map = L.map('map').setView([37.8, -96], 3);
 
-var chosenCountry = 'France';
+var destination = 'France';
 
-var info = getInfo(chosenCountry);
+var info = getInfo(destination);
 map.addControl(info);
 
 map.addLayer(getCountriesLayer());
 
-getData(chosenCountry);
+getData(destination);
 
-function getData(chosenCountry) {
-  var maxRoutesCount = 0;
+function getData(destination) {
   $.ajax({
     type: 'GET',
-    url: 'http://localhost:8882/routes?country=' + chosenCountry,
+    url: 'http://localhost:8882/routes?country=' + destination,
     dataType: "json",
     xhrFields: {
       withCredentials: false
     },
     success: function(results) {
-      var routes = {};
-      results.forEach(function(result) {
-        var fromCountry = result.from.country;
-        if (fromCountry === chosenCountry) return;
-
-        if (routes[fromCountry] === undefined) {
-          routes[fromCountry] = [];
-        }
-        routes[fromCountry].push(result);
-      })
+      var maxRoutesCount = 0;
+      var routes = groupRoutesByCountry(results, destination);
       var countriesRoutes = JSON.parse(JSON.stringify(countriesData));
       countriesRoutes.features.forEach(function(countryData) {
         var name = countryData.properties.name;
@@ -43,7 +34,7 @@ function getData(chosenCountry) {
       });
 
       if (geojson !== undefined) map.removeLayer(geojson);
-      geojson = createGeoJson(countriesRoutes, maxRoutesCount, chosenCountry, info);
+      geojson = createGeoJson(countriesRoutes, maxRoutesCount, destination, info);
       map.addLayer(geojson);
 
       if (legend !== undefined) map.removeLayer(legend);
@@ -53,6 +44,18 @@ function getData(chosenCountry) {
   });
 }
 
+function groupRoutesByCountry(results, destination) {
+  var routes = {};
+  results.forEach(function(result) {
+    var fromCountry = result.from.country;
+    if (fromCountry === destination) return;
+    if (routes[fromCountry] === undefined) {
+      routes[fromCountry] = [];
+    }
+    routes[fromCountry].push(result);
+  })
+  return routes;
+}
 
 function getCountriesLayer() {
   var countriesLayer = L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoiaWx5YXppbmtvdmljaCIsImEiOiJjaXkwbDVyd3kwMDRyMnpuODkzbnBqdzNrIn0.BDlBOMJc3mcQeQR0XTB9rg', {
