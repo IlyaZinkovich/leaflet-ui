@@ -9,6 +9,8 @@ map.addLayer(getCountriesLayer());
 
 getData(destination);
 
+var histByCountry;
+
 function getData(destination) {
   $.ajax({
     type: 'GET',
@@ -32,6 +34,19 @@ function getData(destination) {
           }
         }
       });
+
+      histByCountry = {};
+      for (country in routes) {
+        var hist = {};
+        routes[country].map(function(route) {
+          return route.date;
+        }).map(function(date) {
+          if (date in hist) hist[date]++;
+          else hist[date] = 1;
+        });
+        histByCountry[country] = hist;
+      }
+      createChart(histByCountry[$('#countries-selector').val()]);
 
       if (geojson !== undefined) map.removeLayer(geojson);
       geojson = createGeoJson(countriesRoutes, maxRoutesCount, destination, info);
@@ -64,4 +79,19 @@ function getCountriesLayer() {
     id: 'mapbox.light'
   });
   return countriesLayer;
+}
+
+var countriesNames = ['Australia', 'Austria', 'Belgium', 'Brazil', 'Canada', 'Denmark', 'Finland',
+  'France', 'Germany', 'Ireland', 'Israel', 'Italy', 'Mexico', 'Netherlands',
+  'Norway', 'Poland', 'Russia', 'South Korea', 'Spain', 'Sweden', 'Switzerland',
+  'Taiwan', 'Turkey', 'United Kingdom', 'United States'
+];
+countriesNames.forEach(function(country) {
+  $('#countries-selector').append($("<option></option>")
+    .attr("value", country)
+    .text(country));
+})
+
+function drawChartForSelectedCountry(country) {
+  createChart(histByCountry[country]);
 }

@@ -10,17 +10,19 @@
   <link rel="shortcut icon" type="image/x-icon" href="docs/images/favicon.ico" />
 
   <link href="https://fonts.googleapis.com/css?family=Oswald" rel="stylesheet">
+
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"></script>
 
   <script src="https://code.jquery.com/jquery-1.9.1.min.js"></script>
   <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.min.js"></script>
 
-
   <script src="http://api.mapbox.com/mapbox.js/plugins/arc.js/v0.1.0/arc.js"></script>
   <script src="https://unpkg.com/leaflet-arc@1.0.2/bin/leaflet-arc.min.js"></script>
 
   <link rel="stylesheet" href="css/styles.css" />
+
+  <script src="http://code.highcharts.com/highcharts.js"></script>
 </head>
 
 <body>
@@ -36,6 +38,15 @@
     </div>
   </div>
 
+  <div class="charts-container">
+    <div class="header">
+      <select id="countries-selector" onchange="drawChartForSelectedCountry(this.value);">
+      </select>
+    </div>
+    <div id="chart" class="chart"></div>
+  </div>
+
+  <script type="text/javascript" src="js/chart.js"></script>
   <script type="text/javascript" src="js/geojson.js"></script>
   <script type="text/javascript" src="js/legend.js"></script>
   <script type="text/javascript" src="js/styles.js"></script>

@@ -22,6 +22,7 @@ var getInfo = function(destination) {
 
   instance.updateDestination = function(destination) {
     instance.destination = destination;
+    instance.update();
   }
 
   return instance;
