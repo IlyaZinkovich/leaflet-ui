@@ -1,10 +1,25 @@
-function createChart(data) {
+function createChart(data, chartElementId) {
+  // var allCountriesData = countriesNames.map(function(country) {
+  //   var chartData = [];
+  //   for (time in data[country]) {
+  //     chartData.push([new Date(time).getTime(), data[country][time]]);
+  //   }
+  //   chartData.sort();
+  //   chartData.push({
+  //     type: 'line',
+  //     data: chartData
+  //   })
+  //   return {
+  //     type: 'line',
+  //     data: chartData
+  //   }
+  // })
   var chartData = [];
   for (time in data) {
     chartData.push([new Date(time).getTime(), data[time]]);
   }
   chartData.sort();
-  Highcharts.chart('chart', {
+  Highcharts.chart(chartElementId, {
     chart: {
       zoomType: 'x'
     },

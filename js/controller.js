@@ -46,7 +46,7 @@ function getData(destination) {
         });
         histByCountry[country] = hist;
       }
-      createChart(histByCountry[$('#countries-selector').val()]);
+      createChart(histByCountry[$('#countries-selector').val()], 'chart');
 
       if (geojson !== undefined) map.removeLayer(geojson);
       geojson = createGeoJson(countriesRoutes, maxRoutesCount, destination, info);
@@ -55,6 +55,34 @@ function getData(destination) {
       if (legend !== undefined) map.removeLayer(legend);
       legend = createLegend(maxRoutesCount);
       map.addControl(legend);
+    }
+  });
+
+  getPrediction(destination, 200);
+}
+
+var predictionByCountry = {};
+
+function getPrediction(destination, days) {
+  $.ajax({
+    type: 'GET',
+    url: 'http://localhost:8883/analytics/routes?country=' + destination +
+      '&predictedDays=' + days,
+    dataType: "json",
+    xhrFields: {
+      withCredentials: false
+    },
+    success: function(results) {
+      predictionByCountry = {};
+      results.forEach(function(result) {
+        var fromCountry = result.country;
+        if (fromCountry === destination) return;
+        if (predictionByCountry[fromCountry] === undefined) {
+          predictionByCountry[fromCountry] = [];
+        }
+        predictionByCountry[fromCountry][result.date] = result.count;
+      })
+      createChart(predictionByCountry[$('#countries-selector').val()], 'prediction-chart');
     }
   });
 }
@@ -93,5 +121,6 @@ countriesNames.forEach(function(country) {
 })
 
 function drawChartForSelectedCountry(country) {
-  createChart(histByCountry[country]);
+  createChart(histByCountry[country], 'chart');
+  createChart(predictionByCountry[country], 'prediction-chart');
 }
