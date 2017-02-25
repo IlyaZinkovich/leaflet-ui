@@ -37,6 +37,7 @@ function createGeoJson(countriesRoutes, maxRoutesCount, chosenCountry, info) {
     chosenCountry = e.target.feature.properties.name;
     info.updateDestination(chosenCountry);
     getData(chosenCountry);
+    getPrediction(chosenCountry, 100);
   }
 
   return geojson;
